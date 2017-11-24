@@ -181,6 +181,7 @@ namespace AutoUpdaterDotNET
 
         private static void BackgroundWorkerOnRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs runWorkerCompletedEventArgs)
         {
+            UpdateInfoEventArgs args = null;
             if (!runWorkerCompletedEventArgs.Cancelled)
             {
                 if (runWorkerCompletedEventArgs.Result is DateTime remindLaterTime)
@@ -189,12 +190,12 @@ namespace AutoUpdaterDotNET
                 }
                 else
                 {
-                    var args = runWorkerCompletedEventArgs.Result as UpdateInfoEventArgs;
-                    if (CheckForUpdateEvent != null)
-                    {
-                        CheckForUpdateEvent(args);
-                    }
-                    else
+                    args = runWorkerCompletedEventArgs.Result as UpdateInfoEventArgs;
+                    //if (CheckForUpdateEvent != null)
+                    //{
+                    //    CheckForUpdateEvent(args);
+                    //}
+                 //   else
                     {
                         if (args != null)
                         {
@@ -222,7 +223,7 @@ namespace AutoUpdaterDotNET
                                     thread.SetApartmentState(ApartmentState.STA);
                                     thread.Start();
                                 }
-                                return;
+                               // return;
                             }
                             else
                             {
@@ -243,9 +244,14 @@ namespace AutoUpdaterDotNET
                             }
                         }
                     }
+
                 }
             }
             Running = false;
+            if (CheckForUpdateEvent != null)
+            {
+                CheckForUpdateEvent(args);
+            }
         }
 
         private static void ShowUpdateForm()
