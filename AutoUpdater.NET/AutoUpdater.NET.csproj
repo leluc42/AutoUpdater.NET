@@ -269,7 +269,7 @@
     <None Include="Resources\download_32.png" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\ZipExtractor.exe" />
+    <Content Include="Resources\ZipExtractor.exe" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
