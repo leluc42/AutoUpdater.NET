@@ -21,21 +21,26 @@ namespace ZipExtractor
         private void FormMain_Shown(object sender, EventArgs e)
         {
             string[] args = Environment.GetCommandLineArgs();
-            if (args.Length.Equals(3))
+            if (args.Length.Equals(4))
             {
-                foreach (var process in Process.GetProcesses())
+                bool restartnecessary = true;
+                bool.TryParse(args[3], out restartnecessary);
+                if (restartnecessary)
                 {
-                    try
+                    foreach (var process in Process.GetProcesses())
                     {
-                        if (process.MainModule.FileName.Equals(args[2]))
+                        try
                         {
-                            labelInformation.Text = @"Waiting for application to Exit...";
-                            process.WaitForExit();
+                            if (process.MainModule.FileName.Equals(args[2]))
+                            {
+                                labelInformation.Text = @"Waiting for application to Exit...";
+                                process.WaitForExit();
+                            }
                         }
-                    }
-                    catch (Exception exception)
-                    {
-                        Debug.WriteLine(exception.Message);
+                        catch (Exception exception)
+                        {
+                            Debug.WriteLine(exception.Message);
+                        }
                     }
                 }
 
@@ -85,7 +90,10 @@ namespace ZipExtractor
                         labelInformation.Text = @"Finished";
                         try
                         {
-                            Process.Start(args[2]);
+                            if (restartnecessary)
+                            {
+                                Process.Start(args[2]);
+                            }
                         }
                         catch (Win32Exception exception)
                         {

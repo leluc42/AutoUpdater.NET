@@ -60,6 +60,8 @@ namespace AutoUpdaterDotNET
 
         internal static bool Running;
 
+        internal static bool RestartNecessary;
+
         /// <summary>
         ///     Set the Application Title shown in Update dialog. Although AutoUpdater.NET will get it automatically, you can set this property if you like to give custom Title.
         /// </summary>
@@ -204,7 +206,14 @@ namespace AutoUpdaterDotNET
                                 }
                                 if (Thread.CurrentThread.GetApartmentState().Equals(ApartmentState.STA))
                                 {
-                                    ShowUpdateForm();
+                                    if (RestartNecessary)
+                                    {
+                                        DownloadUpdate();
+                                    }
+                                    else
+                                    {
+                                        ShowUpdateForm();
+                                    }
                                 }
                                 else
                                 {
@@ -344,6 +353,12 @@ namespace AutoUpdaterDotNET
                                     Boolean.TryParse(mandatory?.InnerText, out Mandatory);
 
                                     args.Mandatory = Mandatory;
+
+                                    XmlNode restartNecessary = item.SelectSingleNode("restartnecessary");
+
+                                    Boolean.TryParse(restartNecessary?.InnerText, out RestartNecessary);
+
+                                    args.RestartNecessary = RestartNecessary;
                                 }
                             }
                         }
@@ -377,9 +392,10 @@ namespace AutoUpdaterDotNET
             ChangelogURL = args.ChangelogURL = GetURL(webResponse.ResponseUri, args.ChangelogURL);
             DownloadURL = args.DownloadURL = GetURL(webResponse.ResponseUri, args.DownloadURL);
             Mandatory = args.Mandatory;
+            RestartNecessary = args.RestartNecessary;
             webResponse.Close();
 
-            if (Mandatory)
+            if (Mandatory || RestartNecessary)
             {
                 ShowRemindLaterButton = false;
                 ShowSkipButton = false;
@@ -586,6 +602,8 @@ namespace AutoUpdaterDotNET
         ///     Shows if the update is required or optional.
         /// </summary>
         public bool Mandatory { get; set; }
+
+        public bool RestartNecessary { get; set; }
     }
 
     /// <summary>

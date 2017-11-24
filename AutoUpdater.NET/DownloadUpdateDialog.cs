@@ -75,7 +75,7 @@ namespace AutoUpdaterDotNET
                 {
                     UseShellExecute = true,
                     FileName = installerPath,
-                    Arguments = $"\"{_tempPath}\" \"{Process.GetCurrentProcess().MainModule.FileName}\""
+                    Arguments = $"\"{_tempPath}\" \"{Process.GetCurrentProcess().MainModule.FileName}\" \"{(!AutoUpdater.RestartNecessary).ToString()}\""
                 };
             }
             try
