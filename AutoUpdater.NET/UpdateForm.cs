@@ -42,6 +42,8 @@ namespace AutoUpdaterDotNET
                     buttonRemindLater.Location.Y - reduceHeight);
                 buttonUpdate.Location = new Point(buttonUpdate.Location.X, buttonUpdate.Location.Y - reduceHeight);
             }
+
+
         }
 
         public sealed override string Text
@@ -89,6 +91,7 @@ namespace AutoUpdaterDotNET
             {
                 webBrowser.Navigate(AutoUpdater.ChangelogURL);
             }
+            this.BringToFront();
         }
 
         private void ButtonUpdateClick(object sender, EventArgs e)
