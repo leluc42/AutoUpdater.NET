@@ -45,6 +45,7 @@ namespace AutoUpdaterDotNET
         private static System.Timers.Timer _remindLaterTimer;
 
         internal static String ChangelogURL;
+        internal static String InstallerArgs;
 
         internal static String DownloadURL;
 
@@ -161,6 +162,11 @@ namespace AutoUpdaterDotNET
         /// <param name="myAssembly">Assembly to use for version checking.</param>
         public static void Start(String appCast, Assembly myAssembly = null)
         {
+            using (EventLog eventLog = new EventLog("Application"))
+            {
+                eventLog.Source = "Application";
+                eventLog.WriteEntry("1", EventLogEntryType.Information, 101, 1);
+            }
             if (!Running && _remindLaterTimer == null)
             {
                 Running = true;
@@ -207,7 +213,7 @@ namespace AutoUpdaterDotNET
                                 }
                                 if (Thread.CurrentThread.GetApartmentState().Equals(ApartmentState.STA))
                                 {
-                                    if (RestartNecessary)
+                                    if (!RestartNecessary)
                                     {
                                         DownloadUpdate();
                                     }
@@ -269,11 +275,11 @@ namespace AutoUpdaterDotNET
             Assembly mainAssembly = e.Argument as Assembly;
 
             var companyAttribute =
-                (AssemblyCompanyAttribute) GetAttribute(mainAssembly, typeof(AssemblyCompanyAttribute));
+                (AssemblyCompanyAttribute)GetAttribute(mainAssembly, typeof(AssemblyCompanyAttribute));
             if (string.IsNullOrEmpty(AppTitle))
             {
                 var titleAttribute =
-                    (AssemblyTitleAttribute) GetAttribute(mainAssembly, typeof(AssemblyTitleAttribute));
+                    (AssemblyTitleAttribute)GetAttribute(mainAssembly, typeof(AssemblyTitleAttribute));
                 AppTitle = titleAttribute != null ? titleAttribute.Title : mainAssembly.GetName().Name;
             }
 
@@ -326,7 +332,7 @@ namespace AutoUpdaterDotNET
                             receivedAppCastDocument.Load(appCastStream);
 
                             XmlNodeList appCastItems = receivedAppCastDocument.SelectNodes("item");
-                            
+
                             args = new UpdateInfoEventArgs();
 
                             if (appCastItems != null)
@@ -359,6 +365,10 @@ namespace AutoUpdaterDotNET
                                     Boolean.TryParse(mandatory?.InnerText, out Mandatory);
 
                                     args.Mandatory = Mandatory;
+
+                                    XmlNode appArgs = item.SelectSingleNode("args");
+
+                                    args.InstallerArgs = appArgs?.InnerText;
 
                                     XmlNode restartNecessary = item.SelectSingleNode("restartnecessary");
 
@@ -399,9 +409,10 @@ namespace AutoUpdaterDotNET
             DownloadURL = args.DownloadURL = GetURL(webResponse.ResponseUri, args.DownloadURL);
             Mandatory = args.Mandatory;
             RestartNecessary = args.RestartNecessary;
+            InstallerArgs = args.InstallerArgs;
             webResponse.Close();
 
-            if (Mandatory || RestartNecessary)
+            if (Mandatory)
             {
                 ShowRemindLaterButton = false;
                 ShowSkipButton = false;
@@ -459,6 +470,204 @@ namespace AutoUpdaterDotNET
             e.Cancel = false;
             e.Result = args;
         }
+
+
+        //private static void BackgroundWorkerDoWork(object sender, DoWorkEventArgs e)
+        //{
+        //    e.Cancel = true;
+        //    Assembly mainAssembly = e.Argument as Assembly;
+
+        //    var companyAttribute =
+        //        (AssemblyCompanyAttribute)GetAttribute(mainAssembly, typeof(AssemblyCompanyAttribute));
+        //    if (string.IsNullOrEmpty(AppTitle))
+        //    {
+        //        var titleAttribute =
+        //            (AssemblyTitleAttribute)GetAttribute(mainAssembly, typeof(AssemblyTitleAttribute));
+        //        AppTitle = titleAttribute != null ? titleAttribute.Title : mainAssembly.GetName().Name;
+        //    }
+
+        //    string appCompany = companyAttribute != null ? companyAttribute.Company : "";
+
+        //    RegistryLocation = !string.IsNullOrEmpty(appCompany)
+        //        ? $@"Software\{appCompany}\{AppTitle}\AutoUpdater"
+        //        : $@"Software\{AppTitle}\AutoUpdater";
+
+        //    InstalledVersion = mainAssembly.GetName().Version;
+
+        //    var webRequest = WebRequest.Create(AppCastURL);
+        //    webRequest.CachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
+        //    if (Proxy != null)
+        //    {
+        //        webRequest.Proxy = Proxy;
+        //    }
+        //    WebResponse webResponse;
+
+        //    try
+        //    {
+        //        webResponse = webRequest.GetResponse();
+        //    }
+        //    catch (Exception)
+        //    {
+        //        e.Cancel = false;
+        //        return;
+        //    }
+        //    UpdateInfoEventArgs args;
+        //    using (Stream appCastStream = webResponse.GetResponseStream())
+        //    {
+        //        if (appCastStream != null)
+        //        {
+        //            if (ParseUpdateInfoEvent != null)
+        //            {
+        //                using (StreamReader streamReader = new StreamReader(appCastStream))
+        //                {
+        //                    string data = streamReader.ReadToEnd();
+        //                    ParseUpdateInfoEventArgs parseArgs = new ParseUpdateInfoEventArgs(data);
+        //                    ParseUpdateInfoEvent(parseArgs);
+        //                    args = parseArgs.UpdateInfo;
+        //                }
+        //            }
+        //            else
+        //            {
+        //                XmlDocument receivedAppCastDocument = new XmlDocument();
+
+        //                try
+        //                {
+        //                    receivedAppCastDocument.Load(appCastStream);
+
+        //                    XmlNodeList appCastItems = receivedAppCastDocument.SelectNodes("item");
+
+        //                    args = new UpdateInfoEventArgs();
+
+        //                    if (appCastItems != null)
+        //                    {
+        //                        foreach (XmlNode item in appCastItems)
+        //                        {
+        //                            XmlNode appCastVersion = item.SelectSingleNode("version");
+
+        //                            try
+        //                            {
+        //                                CurrentVersion = new Version(appCastVersion?.InnerText);
+        //                            }
+        //                            catch (Exception)
+        //                            {
+        //                                CurrentVersion = null;
+        //                            }
+
+        //                            args.CurrentVersion = CurrentVersion;
+
+        //                            XmlNode appCastChangeLog = item.SelectSingleNode("changelog");
+
+        //                            args.ChangelogURL = appCastChangeLog?.InnerText;
+
+        //                            XmlNode appCastUrl = item.SelectSingleNode("url");
+
+        //                            args.DownloadURL = appCastUrl?.InnerText;
+
+        //                            XmlNode mandatory = item.SelectSingleNode("mandatory");
+
+        //                            Boolean.TryParse(mandatory?.InnerText, out Mandatory);
+
+        //                            args.Mandatory = Mandatory;
+
+        //                            XmlNode restartNecessary = item.SelectSingleNode("restartnecessary");
+
+        //                            Boolean.TryParse(restartNecessary?.InnerText, out RestartNecessary);
+
+        //                            args.RestartNecessary = RestartNecessary;
+        //                        }
+        //                    }
+        //                }
+        //                catch (XmlException)
+        //                {
+        //                    e.Cancel = false;
+        //                    webResponse.Close();
+        //                    return;
+        //                }
+        //            }
+        //        }
+        //        else
+        //        {
+        //            e.Cancel = false;
+        //            webResponse.Close();
+        //            return;
+        //        }
+        //    }
+
+        //    if (args.CurrentVersion == null || string.IsNullOrEmpty(args.DownloadURL))
+        //    {
+        //        webResponse.Close();
+        //        if (ReportErrors)
+        //        {
+        //            throw new InvalidDataException();
+        //        }
+        //        return;
+        //    }
+
+        //    CurrentVersion = args.CurrentVersion;
+        //    ChangelogURL = args.ChangelogURL = GetURL(webResponse.ResponseUri, args.ChangelogURL);
+        //    DownloadURL = args.DownloadURL = GetURL(webResponse.ResponseUri, args.DownloadURL);
+        //    Mandatory = args.Mandatory;
+        //    RestartNecessary = args.RestartNecessary;
+        //    webResponse.Close();
+
+        //    if (Mandatory)
+        //    {
+        //        ShowRemindLaterButton = false;
+        //        ShowSkipButton = false;
+        //    }
+        //    else
+        //    {
+        //        using (RegistryKey updateKey = Registry.CurrentUser.OpenSubKey(RegistryLocation))
+        //        {
+        //            if (updateKey != null)
+        //            {
+        //                object skip = updateKey.GetValue("skip");
+        //                object applicationVersion = updateKey.GetValue("version");
+        //                if (skip != null && applicationVersion != null)
+        //                {
+        //                    string skipValue = skip.ToString();
+        //                    var skipVersion = new Version(applicationVersion.ToString());
+        //                    if (skipValue.Equals("1") && CurrentVersion <= skipVersion)
+        //                        return;
+        //                    if (CurrentVersion > skipVersion)
+        //                    {
+        //                        using (RegistryKey updateKeyWrite = Registry.CurrentUser.CreateSubKey(RegistryLocation))
+        //                        {
+        //                            if (updateKeyWrite != null)
+        //                            {
+        //                                updateKeyWrite.SetValue("version", CurrentVersion.ToString());
+        //                                updateKeyWrite.SetValue("skip", 0);
+        //                            }
+        //                        }
+        //                    }
+        //                }
+
+        //                object remindLaterTime = updateKey.GetValue("remindlater");
+
+        //                if (remindLaterTime != null)
+        //                {
+        //                    DateTime remindLater = Convert.ToDateTime(remindLaterTime.ToString(),
+        //                        CultureInfo.CreateSpecificCulture("en-US").DateTimeFormat);
+
+        //                    int compareResult = DateTime.Compare(DateTime.Now, remindLater);
+
+        //                    if (compareResult < 0)
+        //                    {
+        //                        e.Cancel = false;
+        //                        e.Result = remindLater;
+        //                        return;
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
+
+        //    args.IsUpdateAvailable = CurrentVersion > InstalledVersion;
+        //    args.InstalledVersion = InstalledVersion;
+
+        //    e.Cancel = false;
+        //    e.Result = args;
+        //}
 
         private static string GetURL(Uri baseUri, String url)
         {
@@ -603,6 +812,11 @@ namespace AutoUpdaterDotNET
         ///     Returns version of the application currently installed on the user's PC.
         /// </summary>
         public Version InstalledVersion { get; set; }
+
+        /// <summary>
+        ///     Installer arguament string.
+        /// </summary>
+        public string InstallerArgs { get; set; }
 
         /// <summary>
         ///     Shows if the update is required or optional.
