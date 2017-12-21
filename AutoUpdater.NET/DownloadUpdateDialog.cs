@@ -44,6 +44,17 @@ namespace AutoUpdaterDotNET
             _webClient.DownloadFileAsync(uri, _tempPath);
         }
 
+
+        private const int CP_NOCLOSE_BUTTON = 0x200;
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                CreateParams myCp = base.CreateParams;
+                myCp.ClassStyle = myCp.ClassStyle | CP_NOCLOSE_BUTTON;
+                return myCp;
+            }
+        }
         private void OnDownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
         {
             progressBar.Value = e.ProgressPercentage;
@@ -65,7 +76,7 @@ namespace AutoUpdaterDotNET
                 return;
             }
 
-            var processStartInfo = new ProcessStartInfo {FileName = _tempPath, UseShellExecute = true};
+            var processStartInfo = new ProcessStartInfo {FileName = _tempPath, UseShellExecute = false};
             var extension = Path.GetExtension(_tempPath);
             if (extension != null && extension.ToLower().Equals(".zip"))
             {
